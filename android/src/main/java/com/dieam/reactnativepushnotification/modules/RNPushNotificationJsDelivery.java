@@ -24,11 +24,16 @@ public class RNPushNotificationJsDelivery {
         mReactContext = reactContext;
     }
 
-    void sendEvent(String eventName, Object params) {
+     void sendEvent(final String eventName,final Object params) {
         if (mReactContext.hasActiveCatalystInstance()) {
-            mReactContext
-                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                    .emit(eventName, params);
+            mReactContext.runOnUiQueueThread(new Runnable() {
+                @Override
+                public void run() {
+                    mReactContext
+                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                            .emit(eventName, params);
+                }
+            });
         }
     }
 
