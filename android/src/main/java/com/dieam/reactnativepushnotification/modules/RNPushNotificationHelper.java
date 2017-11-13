@@ -4,6 +4,7 @@ package com.dieam.reactnativepushnotification.modules;
 import android.app.AlarmManager;
 import android.app.Application;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -28,6 +29,7 @@ import org.json.JSONException;
 
 import java.util.Arrays;
 
+import static android.content.Context.NOTIFICATION_SERVICE;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotificationAttributes.fromJson;
 
@@ -157,12 +159,16 @@ public class RNPushNotificationHelper {
                 title = context.getPackageManager().getApplicationLabel(appInfo).toString();
             }
 
-            NotificationCompat.Builder notification = new NotificationCompat.Builder(context)
-                    .setContentTitle(title)
-                    .setTicker(bundle.getString("ticker"))
-                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setAutoCancel(bundle.getBoolean("autoCancel", true));
+            NotificationCompat.Builder notification = new NotificationCompat.Builder(context,context.getPackageName());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                notification.setChannelId(context.getPackageName())
+                            .setWhen(System.currentTimeMillis());
+            }
+                notification.setContentTitle(title)
+                            .setTicker(bundle.getString("ticker"))
+                            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setAutoCancel(bundle.getBoolean("autoCancel", true));
 
             String group = bundle.getString("group");
             if (group != null) {
@@ -454,7 +460,23 @@ public class RNPushNotificationHelper {
     }
 
     private NotificationManager notificationManager() {
-        return (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String id = context.getPackageName();
+            // The user-visible name of the channel.
+            CharSequence name = context.getPackageName();
+            // The user-visible description of the channel.
+            String description = context.getApplicationInfo().toString();
+            int importance = NotificationManager.IMPORTANCE_MAX;
+            NotificationChannel mChannel = new NotificationChannel(id, name, importance);
+            // Configure the notification channel.
+            mChannel.setDescription(description);
+            mChannel.enableLights(true);
+            mChannel.setLightColor(Color.BLUE);
+            notificationManager.createNotificationChannel(mChannel);
+        }
+        return notificationManager;
+        //return (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
     }
 
     private static void commit(SharedPreferences.Editor editor) {
